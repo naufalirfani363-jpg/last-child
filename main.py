@@ -5,17 +5,21 @@ from datetime import datetime
 BARANG_FILE = "barang.txt"
 RIWAYAT_FILE = "riwayat.txt"
 
+def clear_screen():
+    """Membersihkan layar console"""
+    os.system('cls' if os.name == 'nt' else 'clear')
+
 def init_database():
     """Inisialisasi file database jika belum ada"""
     if not os.path.exists(BARANG_FILE):
         with open(BARANG_FILE, "w") as f:
-            pass  # Buat file kosong
+            pass
     if not os.path.exists(RIWAYAT_FILE):
         with open(RIWAYAT_FILE, "w") as f:
-            pass  # Buat file kosong
+            pass
 
 def get_next_id(file_path):
-    """Mendapatkan ID berikutnya untuk entri baru"""
+    """Mendapatkan ID berikutnya"""
     if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
         return 1
     
@@ -30,11 +34,10 @@ def get_next_id(file_path):
     return max_id + 1
 
 def tambah_barang():
-    """Menambahkan barang baru ke database"""
+    clear_screen()
     print("\n=== TAMBAH BARANG BARU ===")
     nama = input("Masukkan nama barang: ").strip()
     
-    # Validasi harga
     while True:
         try:
             harga = int(input("Masukkan harga target barang: Rp "))
@@ -48,28 +51,28 @@ def tambah_barang():
     barang_id = get_next_id(BARANG_FILE)
     tanggal = datetime.now().strftime("%Y-%m-%d")
     
-    # Simpan ke database barang
     with open(BARANG_FILE, "a") as f:
         f.write(f"{barang_id}|{nama}|{harga}|0|{tanggal}\n")
     
     print(f"\nBarang '{nama}' berhasil ditambahkan!")
-    print(f"ID Barang: {barang_id}")
     print(f"Harga Target: Rp {harga:,}")
     print(f"Tanggal Mulai: {tanggal}")
+    input("\nTekan Enter untuk kembali ke menu...")
+    clear_screen()
 
 def tambah_tabungan():
-    """Menambahkan tabungan untuk barang tertentu"""
+    clear_screen()
     if not os.path.exists(BARANG_FILE) or os.path.getsize(BARANG_FILE) == 0:
-        print("\nTidak ada barang yang terdaftar. Silakan tambahkan barang terlebih dahulu.")
+        print("\nTidak ada barang yang terdaftar.")
+        input("\nTekan Enter untuk kembali...")
+        clear_screen()
         return
     
     print("\n=== DAFTAR BARANG ===")
     lihat_barang(hide_menu=True)
     
-    # Pilih barang
-    barang_id = input("\nPilih ID barang untuk ditabung: ").strip()
+    barang_id = input("\nPilih ID barang: ").strip()
     
-    # Cari barang
     barang_ditemukan = False
     barang_data = []
     with open(BARANG_FILE, "r") as f:
@@ -82,12 +85,13 @@ def tambah_tabungan():
     
     if not barang_ditemukan:
         print("ID barang tidak ditemukan!")
+        input("\nTekan Enter...")
+        clear_screen()
         return
     
-    # Input jumlah tabungan
     while True:
         try:
-            jumlah = int(input("Masukkan jumlah uang yang ditabung hari ini: Rp "))
+            jumlah = int(input("Masukkan jumlah tabungan hari ini: Rp "))
             if jumlah <= 0:
                 print("Jumlah harus lebih dari 0!")
                 continue
@@ -95,11 +99,9 @@ def tambah_tabungan():
         except ValueError:
             print("Masukkan angka yang valid!")
     
-    # Update total tabungan
     total_tertabung = int(barang_data[3]) + jumlah
     sisa = int(barang_data[2]) - total_tertabung
     
-    # Update database barang
     lines = []
     with open(BARANG_FILE, "r") as f:
         for line in f:
@@ -112,26 +114,21 @@ def tambah_tabungan():
     with open(BARANG_FILE, "w") as f:
         f.writelines(lines)
     
-    # Simpan riwayat
     riwayat_id = get_next_id(RIWAYAT_FILE)
     tanggal = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(RIWAYAT_FILE, "a") as f:
         f.write(f"{riwayat_id}|{barang_id}|{barang_data[1]}|{jumlah}|{tanggal}\n")
     
-    # Tampilkan hasil
     print("\n" + "="*50)
     print(f"Berhasil menambahkan tabungan untuk {barang_data[1]}!")
-    print(f"Jumlah ditabung: Rp {jumlah:,}")
     print(f"Total tertabung: Rp {total_tertabung:,}")
-    print(f"Sisa yang harus ditabung: Rp {sisa:,}")
-    
+    print(f"Sisa: Rp {sisa:,}")
     if sisa <= 0:
-        print("\nSELAMAT! Tabungan barang Anda telah tercapai!")
-        print(f"Anda berhasil mengumpulkan Rp {total_tertabung:,} untuk {barang_data[1]}")
-    else:
-        persentase = (total_tertabung / int(barang_data[2])) * 100
-        print(f"Progres: {persentase:.1f}% tercapai")
+        print("🎉 Target tabungan tercapai!")
     print("="*50)
+
+    input("\nTekan Enter untuk kembali ke menu...")
+    clear_screen()
 
 def lihat_barang(hide_menu=False):
     """Menampilkan daftar barang dan progres tabungan"""
@@ -140,7 +137,7 @@ def lihat_barang(hide_menu=False):
         return
     
     print("\n" + "="*60)
-    print(f"{'ID':<5} {'NAMA BARANG':<20} {'HARGA TARGET':<15} {'TERKUMPUL':<15} {'PROGRES'}")
+    print(f"{'ID':<5} {'NAMA BARANG':<20} {'HARGA TARGET':<15} {'TERKUMPUL':<15}")
     print("-"*60)
     
     with open(BARANG_FILE, "r") as f:
@@ -154,20 +151,45 @@ def lihat_barang(hide_menu=False):
                 
                 # Hitung progres
                 persentase = (terkumpul / harga) * 100
-                progress_bar = "█" * int(persentase/10) + "░" * (10 - int(persentase/10))
-                
-                print(f"{barang_id:<5} {nama:<20} Rp {harga:<12,} Rp {terkumpul:<12,} {persentase:.1f}%")
-                print(f"      [{''.join(progress_bar)}]")
+
+                # Progress bar ukuran lebih kecil (10 blok)
+                total_bar = 10
+                filled = int((persentase / 100) * total_bar)
+                empty = total_bar - filled
+
+                # Isi bar
+                bar = "█" * filled + "░" * empty
+
+                # Persentase ditaruh di tengah bar
+                progress_text = f"{persentase:.1f}%"
+                bar_list = list(bar)
+                mid = len(bar_list) // 2
+
+                start_pos = mid - len(progress_text) // 2
+                for i, ch in enumerate(progress_text):
+                    if 0 <= start_pos + i < len(bar_list):
+                        bar_list[start_pos + i] = ch
+
+                bar_final = "".join(bar_list)
+
+                # Tampilkan data
+                print(f"{barang_id:<5} {nama:<20} Rp {harga:<12,} Rp {terkumpul:<12,}")
+                print(f"      [{bar_final}]")
     
     print("="*60)
     
     if not hide_menu:
-        input("\nTekan Enter untuk kembali ke menu...")
+        input("\nTekan Enter untuk kembali...")
+        clear_screen()
+
+
 
 def lihat_riwayat():
-    """Menampilkan riwayat tabungan"""
+    clear_screen()
     if not os.path.exists(RIWAYAT_FILE) or os.path.getsize(RIWAYAT_FILE) == 0:
         print("\nBelum ada riwayat tabungan.")
+        input("\nTekan Enter...")
+        clear_screen()
         return
     
     print("\n" + "="*70)
@@ -176,25 +198,26 @@ def lihat_riwayat():
     
     with open(RIWAYAT_FILE, "r") as f:
         for line in f:
-            if line.strip():
-                parts = line.strip().split("|")
-                print(f"{parts[0]:<5} {parts[2]:<20} Rp {int(parts[3]):<12,} {parts[4]}")
+            parts = line.strip().split("|")
+            print(f"{parts[0]:<5} {parts[2]:<20} Rp {int(parts[3]):<12,} {parts[4]}")
     
     print("="*70)
-    input("\nTekan Enter untuk kembali ke menu...")
+    input("\nTekan Enter...")
+    clear_screen()
 
 def hapus_barang():
-    """Menghapus barang dari database"""
+    clear_screen()
     if not os.path.exists(BARANG_FILE) or os.path.getsize(BARANG_FILE) == 0:
-        print("\nTidak ada barang yang terdaftar.")
+        print("\nTidak ada barang.")
+        input("\nEnter...")
+        clear_screen()
         return
     
     print("\n=== HAPUS BARANG ===")
     lihat_barang(hide_menu=True)
     
-    barang_id = input("\nMasukkan ID barang yang akan dihapus: ").strip()
+    barang_id = input("\nMasukkan ID barang: ").strip()
     
-    # Cek apakah barang ada
     barang_ditemukan = False
     with open(BARANG_FILE, "r") as f:
         for line in f:
@@ -204,40 +227,38 @@ def hapus_barang():
                 break
     
     if not barang_ditemukan:
-        print("ID barang tidak ditemukan!")
+        print("ID tidak ditemukan!")
+        input("\nEnter...")
+        clear_screen()
         return
     
-    konfirmasi = input(f"Yakin ingin menghapus barang '{nama_barang}'? (y/n): ").lower()
+    konfirmasi = input(f"Yakin hapus '{nama_barang}'? (y/n): ").lower()
     if konfirmasi != 'y':
-        print("Penghapusan dibatalkan.")
+        print("Batal.")
+        input("\nEnter...")
+        clear_screen()
         return
     
-    # Hapus dari database barang
-    lines = []
+    # Hapus barang
     with open(BARANG_FILE, "r") as f:
-        for line in f:
-            if not line.startswith(barang_id + "|"):
-                lines.append(line)
-    
+        lines = [line for line in f if not line.startswith(barang_id + "|")]
     with open(BARANG_FILE, "w") as f:
         f.writelines(lines)
-    
-    # Hapus riwayat terkait
-    riwayat_lines = []
+
+    # Hapus riwayat
     with open(RIWAYAT_FILE, "r") as f:
-        for line in f:
-            if not line.split("|")[1] == barang_id:
-                riwayat_lines.append(line)
-    
+        riw = [line for line in f if line.split("|")[1] != barang_id]
     with open(RIWAYAT_FILE, "w") as f:
-        f.writelines(riwayat_lines)
-    
-    print(f"\nBarang '{nama_barang}' dan seluruh riwayatnya berhasil dihapus!")
+        f.writelines(riw)
+
+    print(f"\nBarang '{nama_barang}' berhasil dihapus!")
+    input("\nEnter...")
+    clear_screen()
 
 def main_menu():
-    """Menampilkan menu utama"""
     while True:
-        print("\n" + "="*50)
+        clear_screen()
+        print("="*50)
         print("PROGRAM MANAJEMEN TABUNGAN BARANG".center(50))
         print("="*50)
         print("1. Tambah Barang Baru")
@@ -250,31 +271,24 @@ def main_menu():
         
         pilihan = input("Pilih menu (1-6): ").strip()
         
-        if pilihan == "1":
-            tambah_barang()
-        elif pilihan == "2":
-            tambah_tabungan()
-        elif pilihan == "3":
-            lihat_barang()
-        elif pilihan == "4":
-            lihat_riwayat()
-        elif pilihan == "5":
-            hapus_barang()
+        if pilihan == "1": tambah_barang()
+        elif pilihan == "2": tambah_tabungan()
+        elif pilihan == "3": clear_screen(); lihat_barang()
+        elif pilihan == "4": lihat_riwayat()
+        elif pilihan == "5": hapus_barang()
         elif pilihan == "6":
-            print("\nTerima kasih telah menggunakan program ini!")
-            print("Data tabungan Anda telah disimpan secara otomatis.")
+            clear_screen()
+            print("Terima kasih sudah menggunakan program!")
             break
         else:
-            print("Pilihan tidak valid! Silakan pilih 1-6.")
+            print("Pilihan tidak valid!")
+            input("\nEnter...")
+            clear_screen()
 
 if __name__ == "__main__":
-    # Inisialisasi database
     init_database()
-    
-    # Jalankan program utama
-    print("="*50)
-    print("SELAMAT DATANG DI PROGRAM TABUNGAN BARANG".center(50))
-    print("="*50)
-    print("Simpan impian Anda dengan menabung secara teratur!")
-    
+    clear_screen()
+    print("SELAMAT DATANG DI PROGRAM TABUNGAN BARANG")
+    print("Simpan impian Anda dengan menabung!")
+    input("\nTekan Enter untuk melanjutkan...")
     main_menu()
